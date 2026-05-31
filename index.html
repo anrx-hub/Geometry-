@@ -1,49 +1,107 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geometry Dash Simple Clone</title>
+    <!-- منع الزووم والتكبير عبر إعدادات الشاشة -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>لعبة حاتم نعجة جري</title>
     <style>
         body {
             margin: 0;
-            background: #111;
+            background: #1a1a2e;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             height: 100vh;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            /* منع تحديد النصوص أو إظهار القوائم عند الضغط المطول */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        h1 {
+            margin-bottom: 10px;
+            font-size: 26px;
+            text-shadow: 2px 2px 4px #000;
         }
         canvas {
-            border: 4px solid #fff;
-            background: #222;
+            border: 4px solid #e94560;
+            background: #16213e;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+            max-width: 95%; /* لجعل اللعبة متناسقة مع شاشات الهواتف */
+            height: auto;
+        }
+        .instructions {
+            margin-top: 15px;
+            font-size: 16px;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
+    <h1>لعبة حاتم نعجة جري 🏃‍♂️💨</h1>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="instructions"><b>اضغط على الشاشة</b> للقفز أو لإعادة اللعب!</div>
 
 <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    // إعدادات اللاعب (المكعب)
-    let player = { x: 100, y: 300, size: 40, yVelocity: 0, grounded: false };
+    // تحميل صورة الشخصية
+    const playerImage = new Image();
+    playerImage.src = 'hatem.png'; 
+
+    // إعدادات اللاعب
+    let player = { 
+        x: 100, 
+        y: 280, 
+        width: 60,   
+        height: 60,  
+        yVelocity: 0, 
+        grounded: false 
+    };
+    
     const gravity = 0.6;
-    const jumpForce = -12;
+    const jumpForce = -13;
 
     // إعدادات العقبات
     let obstacles = [];
-    let gameSpeed = 5;
+    let gameSpeed = 6;
+    let score = 0;
     let isGameOver = false;
 
-    // الاستماع لزر القفز
-    window.addEventListener("keydown", (e) => {
-        if ((e.code === "Space" || e.code === "ArrowUp") && player.grounded && !isGameOver) {
+    // دالة التحكم بالقفز وإعادة اللعب
+    function handleAction() {
+        if (!isGameOver && player.grounded) {
             player.yVelocity = jumpForce;
             player.grounded = false;
+        } else if (isGameOver) {
+            resetGame();
+        }
+    }
+
+    // [للهواتف] الاستماع للمس الشاشة ومنع السلوك الافتراضي (الزووم والاهتزاز)
+    window.addEventListener("touchstart", (e) => {
+        // منع التكبير والوظائف الإضافية للمتصفح أثناء اللعب
+        if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+            e.preventDefault(); 
+        }
+        handleAction();
+    }, { passive: false });
+
+    // [للكمبيوتر] دعم أزرار الكيبورد أيضاً
+    window.addEventListener("keydown", (e) => {
+        if (e.code === "Space" || e.code === "ArrowUp") {
+            if (!isGameOver && player.grounded) {
+                player.yVelocity = jumpForce;
+                player.grounded = false;
+            }
         }
         if (isGameOver && e.code === "KeyR") {
             resetGame();
@@ -51,15 +109,18 @@
     });
 
     function spawnObstacle() {
-        if (Math.random() < 0.02 && obstacles.length < 3) {
-            obstacles.push({ x: canvas.width, y: 310, width: 30, height: 30 });
+        if (Math.random() < 0.015 && (obstacles.length === 0 || obstacles[obstacles.length - 1].x < canvas.width - 250)) {
+            let height = 30 + Math.random() * 20; 
+            obstacles.push({ x: canvas.width, y: 340 - height, width: 30, height: height });
         }
     }
 
     function resetGame() {
-        player.y = 300;
+        player.y = 280;
         player.yVelocity = 0;
         obstacles = [];
+        score = 0;
+        gameSpeed = 6;
         isGameOver = false;
         animate();
     }
@@ -69,62 +130,74 @@
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // 1. تطبيق الجاذبية على اللاعب
+        score++;
+        if (score % 500 === 0) gameSpeed += 0.5;
+
         player.yVelocity += gravity;
         player.y += player.yVelocity;
 
-        // الأرضية
-        if (player.y >= 300) {
-            player.y = 300;
+        if (player.y >= 340 - player.height) {
+            player.y = 340 - player.height;
             player.yVelocity = 0;
             player.grounded = true;
         }
 
-        // رسم اللاعب (المكعب)
-        ctx.fillStyle = "#00ffcc";
-        ctx.fillRect(player.x, player.y, player.size, player.size);
+        // رسم صورة الشخصية
+        ctx.drawImage(playerImage, player.x, player.y, player.width, player.height);
 
-        // 2. تحريك ورسم العقبات
         spawnObstacle();
         for (let i = obstacles.length - 1; i >= 0; i--) {
             let obs = obstacles[i];
             obs.x -= gameSpeed;
 
-            // رسم العقبة (مربع أحمر كمثال مبسط)
-            ctx.fillStyle = "#ff3336";
+            ctx.fillStyle = "#e94560";
             ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
 
-            // فحص التصادم (Collision Detection)
             if (
                 player.x < obs.x + obs.width &&
-                player.x + player.size > obs.x &&
+                player.x + player.width > obs.x &&
                 player.y < obs.y + obs.height &&
-                player.y + player.size > obs.y
+                player.y + player.height > obs.y
             ) {
                 isGameOver = true;
+                
+                ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = "#ff4757";
+                ctx.font = "bold 34px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("للاسف خسر حاتم! 🐑", canvas.width / 2, canvas.height / 2 - 20);
+                
                 ctx.fillStyle = "white";
-                ctx.font = "30px Arial";
-                ctx.fillText("Game Over! اضغط R لإعادة اللعب", canvas.width / 4, canvas.height / 2);
+                ctx.font = "22px Arial";
+                ctx.fillText(`النتيجة: ${score} نقطة`, canvas.width / 2, canvas.height / 2 + 20);
+                ctx.fillText("المس الشاشة لإعادة المحاولة", canvas.width / 2, canvas.height / 2 + 60);
             }
 
-            // حذف العقبات التي تخرج من الشاشة
             if (obs.x + obs.width < 0) {
                 obstacles.splice(i, 1);
             }
         }
 
-        // رسم خط الأرضية
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#4ecca3";
+        ctx.lineWidth = 4;
         ctx.beginPath();
         ctx.moveTo(0, 340);
         ctx.lineTo(canvas.width, 340);
         ctx.stroke();
 
+        ctx.fillStyle = "#4ecca3";
+        ctx.font = "bold 20px Arial";
+        ctx.textAlign = "right"; // تم تعديل المحاذاة لتناسب الرؤية على الهاتف
+        ctx.fillText(`النقاط: ${score}`, canvas.width - 20, 40);
+
         requestAnimationFrame(animate);
     }
 
-    animate();
+    playerImage.onload = function() {
+        animate();
+    };
 </script>
 </body>
 </html>
