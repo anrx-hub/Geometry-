@@ -163,6 +163,11 @@ const loseSound = new Audio('Fart.mp3');
                 player.y + player.height > obs.y
             ) {
                 isGameOver = true;
+                // تشغيل صوت الخسارة فوراً عند التصادم
+loseSound.play().catch(error => {
+    console.log("المتصفح حظر الصوت حتى يلمس المستخدم الشاشة أولاً:", error);
+});
+
                 
                 ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
