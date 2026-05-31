@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash Simple Clone</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 4px solid #fff;
+            background: #222;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    // إعدادات اللاعب (المكعب)
+    let player = { x: 100, y: 300, size: 40, yVelocity: 0, grounded: false };
+    const gravity = 0.6;
+    const jumpForce = -12;
+
+    // إعدادات العقبات
+    let obstacles = [];
+    let gameSpeed = 5;
+    let isGameOver = false;
+
+    // الاستماع لزر القفز
+    window.addEventListener("keydown", (e) => {
+        if ((e.code === "Space" || e.code === "ArrowUp") && player.grounded && !isGameOver) {
+            player.yVelocity = jumpForce;
+            player.grounded = false;
+        }
+        if (isGameOver && e.code === "KeyR") {
+            resetGame();
+        }
+    });
+
+    function spawnObstacle() {
+        if (Math.random() < 0.02 && obstacles.length < 3) {
+            obstacles.push({ x: canvas.width, y: 310, width: 30, height: 30 });
+        }
+    }
+
+    function resetGame() {
+        player.y = 300;
+        player.yVelocity = 0;
+        obstacles = [];
+        isGameOver = false;
+        animate();
+    }
+
+    function animate() {
+        if (isGameOver) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // 1. تطبيق الجاذبية على اللاعب
+        player.yVelocity += gravity;
+        player.y += player.yVelocity;
+
+        // الأرضية
+        if (player.y >= 300) {
+            player.y = 300;
+            player.yVelocity = 0;
+            player.grounded = true;
+        }
+
+        // رسم اللاعب (المكعب)
+        ctx.fillStyle = "#00ffcc";
+        ctx.fillRect(player.x, player.y, player.size, player.size);
+
+        // 2. تحريك ورسم العقبات
+        spawnObstacle();
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let obs = obstacles[i];
+            obs.x -= gameSpeed;
+
+            // رسم العقبة (مربع أحمر كمثال مبسط)
+            ctx.fillStyle = "#ff3336";
+            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+            // فحص التصادم (Collision Detection)
+            if (
+                player.x < obs.x + obs.width &&
+                player.x + player.size > obs.x &&
+                player.y < obs.y + obs.height &&
+                player.y + player.size > obs.y
+            ) {
+                isGameOver = true;
+                ctx.fillStyle = "white";
+                ctx.font = "30px Arial";
+                ctx.fillText("Game Over! اضغط R لإعادة اللعب", canvas.width / 4, canvas.height / 2);
+            }
+
+            // حذف العقبات التي تخرج من الشاشة
+            if (obs.x + obs.width < 0) {
+                obstacles.splice(i, 1);
+            }
+        }
+
+        // رسم خط الأرضية
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, 340);
+        ctx.lineTo(canvas.width, 340);
+        ctx.stroke();
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
