@@ -126,6 +126,10 @@ const loseSound = new Audio('Fart.mp3');
         gameSpeed = 6;
         isGameOver = false;
         animate();
+        // إيقاف الصوت وإعادته للبداية ليكون جاهزاً للمرة القادمة
+loseSound.pause();
+loseSound.currentTime = 0;
+
     }
 
     function animate() {
